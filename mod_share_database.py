@@ -10,6 +10,16 @@ class ModShareDatabase:
     def __init__(self, db_path="mod_share.db"):
         self.db_path = db_path
         self.logger = logging.getLogger(__name__)
+        
+        # Ensure the database directory exists
+        db_dir = os.path.dirname(db_path)
+        if db_dir and not os.path.exists(db_dir):
+            try:
+                os.makedirs(db_dir, exist_ok=True)
+            except OSError as e:
+                self.logger.error(f"Failed to create database directory: {e}")
+                raise
+        
         self.init_database()
     
     def init_database(self):
@@ -119,21 +129,27 @@ class ModShareDatabase:
     
     def _init_default_categories(self, cursor):
         """Initialize default mod categories"""
-        default_categories = [
-            ("Game Mods", "General game modifications"),
-            ("Character Mods", "Character replacements and additions"),
-            ("Stage Mods", "Custom stages and stage modifications"),
-            ("Music Mods", "Custom music and sound modifications"),
-            ("Texture Mods", "Texture and visual modifications"),
-            ("Utility Mods", "Tools and utilities"),
-            ("Experimental", "Experimental and beta mods")
-        ]
-        
-        for name, description in default_categories:
-            cursor.execute('''
-                INSERT OR IGNORE INTO categories (name, description)
-                VALUES (?, ?)
-            ''', (name, description))
+        try:
+            default_categories = [
+                ("Game Mods", "General game modifications"),
+                ("Character Mods", "Character replacements and additions"),
+                ("Stage Mods", "Custom stages and stage modifications"),
+                ("Music Mods", "Custom music and sound modifications"),
+                ("Texture Mods", "Texture and visual modifications"),
+                ("Utility Mods", "Tools and utilities"),
+                ("Experimental", "Experimental and beta mods")
+            ]
+            
+            for name, description in default_categories:
+                cursor.execute('''
+                    INSERT OR IGNORE INTO categories (name, description)
+                    VALUES (?, ?)
+                ''', (name, description))
+            
+            self.logger.info("Default categories initialized successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize default categories: {e}")
+            raise
     
     def hash_password(self, password):
         """Hash a password using SHA-256"""
@@ -142,6 +158,24 @@ class ModShareDatabase:
     def create_user(self, username, email, password):
         """Create a new user account"""
         try:
+            # Input validation
+            if not username or not username.strip():
+                raise ValueError("Username cannot be empty")
+            
+            if not email or not email.strip():
+                raise ValueError("Email cannot be empty")
+            
+            if not password or len(password) < 6:
+                raise ValueError("Password must be at least 6 characters")
+            
+            # Basic email validation
+            if '@' not in email or '.' not in email:
+                raise ValueError("Invalid email format")
+            
+            # Sanitize inputs
+            username = username.strip()
+            email = email.strip()
+            
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 password_hash = self.hash_password(password)
@@ -206,7 +240,28 @@ class ModShareDatabase:
                    version="1.0", tags=None, is_public=True):
         """Upload a new mod"""
         try:
+            # Input validation
+            if not title or not title.strip():
+                raise ValueError("Mod title cannot be empty")
+            
+            if not file_path or not os.path.exists(file_path):
+                raise ValueError("Mod file does not exist")
+            
+            if not game_compatibility or not game_compatibility.strip():
+                raise ValueError("Game compatibility is required")
+            
+            # Validate file size (max 100MB)
             file_size = os.path.getsize(file_path)
+            max_size = 100 * 1024 * 1024  # 100MB
+            if file_size > max_size:
+                raise ValueError(f"File too large. Maximum size is 100MB. Current size: {file_size / (1024*1024):.1f}MB")
+            
+            # Sanitize inputs
+            title = title.strip()
+            description = description.strip() if description else ""
+            game_compatibility = game_compatibility.strip()
+            version = version.strip() if version else "1.0"
+            tags = tags.strip() if tags else ""
             
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
@@ -343,8 +398,28 @@ class ModShareDatabase:
     def add_comment(self, mod_id, user_id, comment, rating=None):
         """Add a comment and rating to a mod"""
         try:
+            # Input validation
+            if not comment or not comment.strip():
+                raise ValueError("Comment cannot be empty")
+            
+            if rating is not None and (rating < 1 or rating > 5):
+                raise ValueError("Rating must be between 1 and 5")
+            
+            # Sanitize comment
+            comment = comment.strip()
+            
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
+                
+                # Verify mod exists
+                cursor.execute('SELECT id FROM mods WHERE id = ?', (mod_id,))
+                if not cursor.fetchone():
+                    raise ValueError("Mod not found")
+                
+                # Verify user exists
+                cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,))
+                if not cursor.fetchone():
+                    raise ValueError("User not found")
                 
                 cursor.execute('''
                     INSERT INTO comments (mod_id, user_id, comment, rating)

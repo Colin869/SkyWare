@@ -305,6 +305,19 @@ class ModShareGUI:
                 return
             
             try:
+                # Additional validation
+                if len(username) < 3:
+                    messagebox.showerror("Error", "Username must be at least 3 characters")
+                    return
+                
+                if len(username) > 20:
+                    messagebox.showerror("Error", "Username must be less than 20 characters")
+                    return
+                
+                if len(email) > 100:
+                    messagebox.showerror("Error", "Email too long")
+                    return
+                
                 user_id = self.database.create_user(username, email, password)
                 messagebox.showinfo("Success", "Account created successfully! You can now login.")
                 dialog.destroy()
@@ -484,6 +497,17 @@ class ModShareGUI:
     def download_mod(self, mod_details):
         """Download a mod"""
         try:
+            # Validate source file exists
+            source_path = mod_details['file_path']
+            if not os.path.exists(source_path):
+                messagebox.showerror("Error", "Mod file not found on server")
+                return
+            
+            # Check file permissions
+            if not os.access(source_path, os.R_OK):
+                messagebox.showerror("Error", "Cannot read mod file (permission denied)")
+                return
+            
             # Record the download
             self.database.record_download(
                 mod_details['id'],
@@ -494,11 +518,25 @@ class ModShareGUI:
             downloads_dir = "downloads"
             os.makedirs(downloads_dir, exist_ok=True)
             
-            source_path = mod_details['file_path']
             filename = os.path.basename(source_path)
             dest_path = os.path.join(downloads_dir, filename)
             
-            shutil.copy2(source_path, dest_path)
+            # Check if destination already exists
+            if os.path.exists(dest_path):
+                response = messagebox.askyesno("File Exists", 
+                    f"File '{filename}' already exists in downloads. Overwrite?")
+                if not response:
+                    return
+            
+            # Copy file with error handling
+            try:
+                shutil.copy2(source_path, dest_path)
+            except PermissionError:
+                messagebox.showerror("Error", "Permission denied when copying file")
+                return
+            except OSError as e:
+                messagebox.showerror("Error", f"Failed to copy file: {str(e)}")
+                return
             
             messagebox.showinfo("Success", f"Mod downloaded successfully!\nSaved to: {dest_path}")
             
@@ -554,11 +592,23 @@ class ModShareGUI:
             messagebox.showerror("Error", "Please enter a comment")
             return
         
+        # Validate comment length
+        if len(comment) > 1000:
+            messagebox.showerror("Error", "Comment too long. Maximum 1000 characters.")
+            return
+        
+        # Validate rating
+        if rating < 1 or rating > 5:
+            messagebox.showerror("Error", "Rating must be between 1 and 5")
+            return
+        
         try:
             self.database.add_comment(self.current_mod_id, self.current_user['id'], comment, rating)
             self.comment_var.set("")
             self.refresh_comments()
             messagebox.showinfo("Success", "Comment added successfully!")
+        except ValueError as e:
+            messagebox.showerror("Error", str(e))
         except Exception as e:
             self.logger.error(f"Failed to add comment: {e}")
             messagebox.showerror("Error", f"Failed to add comment: {str(e)}")
@@ -622,11 +672,54 @@ class ModShareGUI:
             messagebox.showerror("Error", "Selected file does not exist")
             return
         
+        # Validate title length
+        if len(title) > 100:
+            messagebox.showerror("Error", "Title too long. Maximum 100 characters.")
+            return
+        
+        # Validate description length
+        if len(description) > 2000:
+            messagebox.showerror("Error", "Description too long. Maximum 2000 characters.")
+            return
+        
+        # Validate game compatibility length
+        if len(game_compatibility) > 100:
+            messagebox.showerror("Error", "Game compatibility too long. Maximum 100 characters.")
+            return
+        
+        # Validate tags length
+        if len(tags) > 200:
+            messagebox.showerror("Error", "Tags too long. Maximum 200 characters.")
+            return
+        
         try:
+            # Validate file size (max 100MB)
+            file_size = os.path.getsize(file_path)
+            max_size = 100 * 1024 * 1024  # 100MB
+            if file_size > max_size:
+                messagebox.showerror("Error", f"File too large. Maximum size is 100MB. Current size: {file_size / (1024*1024):.1f}MB")
+                return
+            
             # Copy file to mods directory
             filename = os.path.basename(file_path)
             dest_path = os.path.join(self.mods_dir, f"{self.current_user['id']}_{filename}")
-            shutil.copy2(file_path, dest_path)
+            
+            # Check if destination already exists
+            if os.path.exists(dest_path):
+                response = messagebox.askyesno("File Exists", 
+                    f"File '{filename}' already exists. Overwrite?")
+                if not response:
+                    return
+            
+            # Copy file with error handling
+            try:
+                shutil.copy2(file_path, dest_path)
+            except PermissionError:
+                messagebox.showerror("Error", "Permission denied when copying file")
+                return
+            except OSError as e:
+                messagebox.showerror("Error", f"Failed to copy file: {str(e)}")
+                return
             
             # Upload to database
             mod_id = self.database.upload_mod(
