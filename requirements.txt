@@ -1,0 +1,18 @@
+# WiiWare Modding Application Dependencies
+# Core GUI framework
+tkinter  # Built-in with Python, no need to install
+
+# File handling and manipulation
+pillow>=9.0.0  # For image processing and GUI enhancements
+psutil>=5.8.0  # For system information and process management
+
+# Archive and compression handling
+py7zr>=0.18.0  # For 7z archive support
+zipfile  # Built-in Python module
+
+# Network and community features
+requests>=2.28.0  # For downloading mods and updates
+urllib3>=1.26.0  # HTTP library
+
+# Development and debugging
+colorama>=0.4.4  # For colored terminal output
