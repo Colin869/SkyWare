@@ -5,7 +5,7 @@ A comprehensive tool for modding WiiWare software, games, and tools
 """
 
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, simpledialog
+from tkinter import ttk, filedialog, messagebox, simpledialog, colorchooser
 import os
 import sys
 import subprocess
@@ -16,6 +16,7 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
+from PIL import Image, ImageTk
 from mod_share_database import ModShareDatabase
 from mod_share_gui import ModShareGUI
 
@@ -53,11 +54,11 @@ logger = setup_logging()
 class WiiWareModder:
     def __init__(self, root):
         self.root = root
-        self.root.title("WiiWare Modder v1.2")
+        self.root.title("WiiWare Modder v1.3")
         self.root.geometry("1200x800")
         self.root.minsize(800, 600)
         
-        logger.info("Initializing WiiWare Modder v1.2")
+        logger.info("Initializing WiiWare Modder v1.3")
         
         # Set application icon and styling
         self.setup_styling()
@@ -68,6 +69,11 @@ class WiiWareModder:
         self.batch_files = []
         self.installed_mods = []
         self.patch_history = []
+        
+        # Background customization
+        self.background_image = None
+        self.background_photo = None
+        self.background_color = None
         
         # Initialize mod sharing database
         self.mod_share_db = ModShareDatabase()
@@ -158,6 +164,9 @@ class WiiWareModder:
         style.configure('Success.TLabel', foreground='green')
         style.configure('Error.TLabel', foreground='red')
         
+        # Apply background customization
+        self.apply_background()
+        
     def load_config(self):
         """Load application configuration"""
         self.config = {
@@ -200,7 +209,10 @@ class WiiWareModder:
             'show_progress_bars': True,
             'confirm_operations': True,
             'recent_files': [],
-            'max_recent_files': 10
+            'max_recent_files': 10,
+            'background_type': 'default',  # 'default', 'color', 'image'
+            'background_color': '#f0f0f0',
+            'background_image_path': ''
         }
         
         try:
@@ -239,6 +251,215 @@ class WiiWareModder:
             logger.debug("User preferences saved successfully")
         except Exception as e:
             logger.error(f"Error saving user preferences: {str(e)}")
+            
+    def apply_background(self):
+        """Apply background customization based on user preferences"""
+        try:
+            background_type = self.user_prefs.get('background_type', 'default')
+            
+            if background_type == 'color':
+                color = self.user_prefs.get('background_color', '#f0f0f0')
+                self.root.configure(bg=color)
+                # Configure main frame background
+                for widget in self.root.winfo_children():
+                    if isinstance(widget, ttk.Frame):
+                        widget.configure(style='Background.TFrame')
+                
+                # Create custom style for background color
+                style = ttk.Style()
+                style.configure('Background.TFrame', background=color)
+                
+            elif background_type == 'image':
+                image_path = self.user_prefs.get('background_image_path', '')
+                if image_path and os.path.exists(image_path):
+                    self.set_background_image(image_path)
+                    
+            else:  # default
+                # Reset to default styling
+                self.root.configure(bg='SystemButtonFace')
+                style = ttk.Style()
+                style.configure('Background.TFrame', background='SystemButtonFace')
+                
+        except Exception as e:
+            logger.error(f"Error applying background: {str(e)}")
+            
+    def set_background_image(self, image_path):
+        """Set a background image for the application"""
+        try:
+            # Load and resize image
+            image = Image.open(image_path)
+            
+            # Get window size
+            window_width = self.root.winfo_width()
+            window_height = self.root.winfo_height()
+            
+            if window_width <= 1 or window_height <= 1:
+                # Window not yet fully initialized, use default size
+                window_width = 1200
+                window_height = 800
+            
+            # Resize image to fit window while maintaining aspect ratio
+            image.thumbnail((window_width, window_height), Image.Resampling.LANCZOS)
+            
+            # Convert to PhotoImage
+            self.background_photo = ImageTk.PhotoImage(image)
+            
+            # Create background label
+            if hasattr(self, 'background_label'):
+                self.background_label.destroy()
+                
+            self.background_label = tk.Label(self.root, image=self.background_photo)
+            self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
+            self.background_label.lower()  # Send to back
+            
+            logger.info(f"Background image applied: {image_path}")
+            
+        except Exception as e:
+            logger.error(f"Error setting background image: {str(e)}")
+            messagebox.showerror("Error", f"Failed to load background image: {str(e)}")
+            
+    def show_background_settings(self):
+        """Show background customization dialog"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Background Customization")
+        dialog.geometry("500x400")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Center the dialog
+        dialog.geometry("+%d+%d" % (self.root.winfo_rootx() + 50, self.root.winfo_rooty() + 50))
+        
+        # Main frame
+        main_frame = ttk.Frame(dialog, padding="20")
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Title
+        ttk.Label(main_frame, text="Background Customization", font=("Arial", 14, "bold")).pack(pady=(0, 20))
+        
+        # Background type selection
+        type_frame = ttk.LabelFrame(main_frame, text="Background Type", padding="10")
+        type_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        background_type = tk.StringVar(value=self.user_prefs.get('background_type', 'default'))
+        
+        ttk.Radiobutton(type_frame, text="Default", variable=background_type, value="default").pack(anchor=tk.W)
+        ttk.Radiobutton(type_frame, text="Solid Color", variable=background_type, value="color").pack(anchor=tk.W)
+        ttk.Radiobutton(type_frame, text="Custom Image", variable=background_type, value="image").pack(anchor=tk.W)
+        
+        # Color picker frame
+        color_frame = ttk.LabelFrame(main_frame, text="Color Selection", padding="10")
+        color_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        current_color = tk.StringVar(value=self.user_prefs.get('background_color', '#f0f0f0'))
+        color_preview = tk.Frame(color_frame, bg=current_color.get(), width=50, height=30, relief=tk.RAISED, bd=2)
+        color_preview.pack(side=tk.LEFT, padx=(0, 10))
+        
+        def choose_color():
+            color = colorchooser.askcolor(current_color.get(), title="Choose Background Color")
+            if color[1]:  # color[1] contains the hex color
+                current_color.set(color[1])
+                color_preview.configure(bg=color[1])
+                
+        ttk.Button(color_frame, text="Choose Color", command=choose_color).pack(side=tk.LEFT)
+        ttk.Label(color_frame, textvariable=current_color).pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Image selection frame
+        image_frame = ttk.LabelFrame(main_frame, text="Image Selection", padding="10")
+        image_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        image_path_var = tk.StringVar(value=self.user_prefs.get('background_image_path', ''))
+        
+        def browse_image():
+            file_types = [
+                ("Image Files", "*.png;*.jpg;*.jpeg;*.gif;*.bmp"),
+                ("PNG Files", "*.png"),
+                ("JPEG Files", "*.jpg;*.jpeg"),
+                ("GIF Files", "*.gif"),
+                ("BMP Files", "*.bmp"),
+                ("All Files", "*.*")
+            ]
+            
+            filename = filedialog.askopenfilename(
+                title="Select Background Image",
+                filetypes=file_types
+            )
+            
+            if filename:
+                image_path_var.set(filename)
+                
+        ttk.Button(image_frame, text="Browse Image", command=browse_image).pack(side=tk.LEFT)
+        ttk.Label(image_frame, textvariable=image_path_var, wraplength=300).pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Preview frame
+        preview_frame = ttk.LabelFrame(main_frame, text="Preview", padding="10")
+        preview_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+        
+        preview_label = ttk.Label(preview_frame, text="Background preview will appear here")
+        preview_label.pack(expand=True)
+        
+        def update_preview():
+            try:
+                bg_type = background_type.get()
+                
+                if bg_type == 'color':
+                    preview_label.configure(text=f"Color: {current_color.get()}")
+                    preview_frame.configure(style='Preview.TFrame')
+                    style = ttk.Style()
+                    style.configure('Preview.TFrame', background=current_color.get())
+                    
+                elif bg_type == 'image':
+                    image_path = image_path_var.get()
+                    if image_path and os.path.exists(image_path):
+                        preview_label.configure(text=f"Image: {os.path.basename(image_path)}")
+                    else:
+                        preview_label.configure(text="No valid image selected")
+                        
+                else:  # default
+                    preview_label.configure(text="Default system background")
+                    preview_frame.configure(style='')
+                    
+            except Exception as e:
+                preview_label.configure(text=f"Preview error: {str(e)}")
+                
+        # Bind preview updates
+        background_type.trace('w', lambda *args: update_preview())
+        current_color.trace('w', lambda *args: update_preview())
+        image_path_var.trace('w', lambda *args: update_preview())
+        
+        # Initial preview
+        update_preview()
+        
+        # Buttons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=tk.X, pady=(15, 0))
+        
+        def apply_settings():
+            try:
+                # Save settings
+                self.user_prefs['background_type'] = background_type.get()
+                self.user_prefs['background_color'] = current_color.get()
+                self.user_prefs['background_image_path'] = image_path_var.get()
+                
+                # Apply background
+                self.apply_background()
+                
+                # Save preferences
+                self.save_user_preferences()
+                
+                messagebox.showinfo("Success", "Background settings applied successfully!")
+                dialog.destroy()
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to apply background settings: {str(e)}")
+                
+        def reset_to_default():
+            background_type.set('default')
+            current_color.set('#f0f0f0')
+            image_path_var.set('')
+            
+        ttk.Button(button_frame, text="Apply", command=apply_settings).pack(side=tk.RIGHT, padx=(5, 0))
+        ttk.Button(button_frame, text="Reset to Default", command=reset_to_default).pack(side=tk.RIGHT)
+        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.LEFT)
             
     def add_recent_file(self, file_path):
         """Add a file to recent files list"""
@@ -286,7 +507,7 @@ class WiiWareModder:
         main_frame.pack(fill=tk.BOTH, expand=True)
         
         # Title
-        title_label = ttk.Label(main_frame, text="WiiWare Modder v1.1", style='Title.TLabel')
+        title_label = ttk.Label(main_frame, text="WiiWare Modder v1.3", style='Title.TLabel')
         title_label.pack(pady=(0, 20))
         
         # Top toolbar frame
@@ -443,6 +664,13 @@ class WiiWareModder:
         height_var = tk.StringVar(value=str(self.user_prefs['window_size']['height']))
         height_entry = ttk.Entry(size_inner_frame, textvariable=height_var, width=10)
         height_entry.pack(side=tk.LEFT, padx=(5, 0))
+        
+        # Background customization button
+        background_frame = ttk.Frame(parent)
+        background_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ttk.Button(background_frame, text="🎨 Customize Background", 
+                  command=self.show_background_settings).pack(anchor=tk.W)
         
         # Store variables for later access
         parent.theme_var = theme_var
