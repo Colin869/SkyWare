@@ -16,6 +16,8 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
+from mod_share_database import ModShareDatabase
+from mod_share_gui import ModShareGUI
 
 # Configure logging
 def setup_logging():
@@ -51,11 +53,11 @@ logger = setup_logging()
 class WiiWareModder:
     def __init__(self, root):
         self.root = root
-        self.root.title("WiiWare Modder v1.1")
+        self.root.title("WiiWare Modder v1.2")
         self.root.geometry("1200x800")
         self.root.minsize(800, 600)
         
-        logger.info("Initializing WiiWare Modder v1.1")
+        logger.info("Initializing WiiWare Modder v1.2")
         
         # Set application icon and styling
         self.setup_styling()
@@ -66,6 +68,9 @@ class WiiWareModder:
         self.batch_files = []
         self.installed_mods = []
         self.patch_history = []
+        
+        # Initialize mod sharing database
+        self.mod_share_db = ModShareDatabase()
         
         # Progress tracking
         self.current_operation = None
@@ -342,6 +347,9 @@ class WiiWareModder:
         
         # Community tab
         self.create_community_tab(notebook)
+        
+        # NEW: Mod Share tab
+        self.create_mod_share_tab(notebook)
         
         # Apply saved window position and size
         self.apply_saved_window_settings()
@@ -940,6 +948,14 @@ class WiiWareModder:
         ttk.Button(features_frame, text="Browse Mod Library", command=self.browse_mods).pack(pady=5)
         ttk.Button(features_frame, text="Upload Mod", command=self.upload_mod).pack(pady=5)
         ttk.Button(features_frame, text="Check for Updates", command=self.check_updates).pack(pady=5)
+        
+    def create_mod_share_tab(self, notebook):
+        """Create the mod sharing tab"""
+        mod_share_frame = ttk.Frame(notebook)
+        notebook.add(mod_share_frame, text="Mod Share")
+        
+        # Create the mod sharing GUI
+        self.mod_share_gui = ModShareGUI(mod_share_frame, self.mod_share_db)
         
     # File browsing methods
     def browse_file(self):

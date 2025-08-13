@@ -1,8 +1,8 @@
-# WiiWare Modder v1.1
+# WiiWare Modder v1.2
 
 A comprehensive Windows application for modding WiiWare software, games, and tools. This application provides an intuitive graphical interface for working with WiiWare files and managing mods.
 
-## ✨ New in Version 1.1
+## ✨ New in Version 1.2
 
 ### 🔧 File Patching Capabilities
 - Apply IPS, BPS, and custom patch files to WiiWare files
@@ -74,6 +74,17 @@ A comprehensive Windows application for modding WiiWare software, games, and too
 - **NEW!** Automatic file type detection and analysis
 - **NEW!** Launch files directly in BrawlCrate for editing
 - **NEW!** Export analysis results for documentation
+
+### 🌐 **NEW!** Mod Sharing Community System
+- **User Account System**: Secure registration and login with email/password
+- **Mod Upload & Download**: Share your mods and download others' creations
+- **Rating & Review System**: Rate and comment on mods with 1-5 star ratings
+- **Search & Filter**: Find mods by category, rating, downloads, and keywords
+- **Mod Categories**: Organized browsing (Game Mods, Character Mods, Stage Mods, etc.)
+- **User Profiles**: View your uploaded mods and manage your content
+- **Forum-like Interface**: Comment system for mod discussions
+- **Download Tracking**: Track download counts and user engagement
+- **Mod Metadata**: Version tracking, compatibility info, and tags
 
 ### Community Features
 - Browse community mod library
