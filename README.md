@@ -1,6 +1,17 @@
-# WiiWare Modder v1.2
+# WiiWare Modder v1.3
 
 A comprehensive Windows application for modding WiiWare software, games, and tools. This application provides an intuitive graphical interface for working with WiiWare files and managing mods.
+
+## ✨ New in Version 1.3
+
+### 🎨 Background Customization
+- **Custom Image Backgrounds**: Set your own photos or images as application background
+- **RGB Color Picker**: Choose any color for solid background customization
+- **Live Preview**: See changes in real-time before applying
+- **Background Types**: Choose between default, solid color, or custom image
+- **Persistent Settings**: Background preferences saved between sessions
+- **Image Format Support**: PNG, JPG, JPEG, GIF, BMP formats supported
+- **Automatic Resizing**: Images automatically resized to fit window while maintaining aspect ratio
 
 ## ✨ New in Version 1.2
 
@@ -97,6 +108,7 @@ A comprehensive Windows application for modding WiiWare software, games, and too
 - **Progress Callbacks**: Real-time progress updates for all operations
 - **Settings Dialog**: Easy access to all configuration options
 - **Theme System**: Multiple GUI themes with live preview
+- **Background Customization**: Custom images and color picker for personalization
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Threading Safety**: All long operations run in background threads
 
@@ -194,6 +206,20 @@ All operations provide real-time progress updates:
 - Operation completion notifications
 - Background threading for responsiveness
 
+### Background Customization
+Personalize your application appearance:
+1. **Access Settings**: Click the "⚙️ Settings" button in the toolbar
+2. **Interface Tab**: Go to the "Interface" tab in the settings dialog
+3. **Customize Background**: Click "🎨 Customize Background"
+4. **Choose Type**: Select from Default, Solid Color, or Custom Image
+5. **Color Picker**: Use the color chooser for solid backgrounds
+6. **Image Selection**: Browse and select your own image files
+7. **Live Preview**: See changes in real-time before applying
+8. **Apply Settings**: Click "Apply" to save your preferences
+
+**Supported Image Formats**: PNG, JPG, JPEG, GIF, BMP
+**Color Support**: Full RGB color picker with hex color codes
+
 ### Settings Management
 Comprehensive settings dialog with:
 - General application settings
@@ -201,6 +227,7 @@ Comprehensive settings dialog with:
 - Backup configuration
 - Theme selection
 - Window preferences
+- **NEW!** Background customization (color picker and custom images)
 
 ## Testing
 
